@@ -1,5 +1,23 @@
 package com.medallia.word2vec;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.thrift.TException;
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -11,19 +29,6 @@ import com.medallia.word2vec.neuralnetwork.NeuralNetworkType;
 import com.medallia.word2vec.thrift.Word2VecModelThrift;
 import com.medallia.word2vec.util.Common;
 import com.medallia.word2vec.util.ThriftUtils;
-import org.apache.commons.io.FileUtils;
-import org.apache.thrift.TException;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 /** 
  * Tests for {@link Word2VecModel} and related classes.
@@ -168,6 +173,24 @@ public class Word2VecTest {
 		String filename = "word2vec.c.output.model.txt";
 		Word2VecModel word2VecModel = Word2VecModel.fromTextFile(filename, Common.readResource(Word2VecTest.class, filename));
 		assertEquals(0.9927725293757652, word2VecModel.forSearch().cosineDistance("three", "five"), 1e-5); 
+	}
+	
+	@Test
+	public void testTrainModelWithArabicText() throws Exception {
+		String tmpFilename = "arabicText.txt";
+		List<String> tmpArabicSentences = Common.readResource(getClass(), tmpFilename);
+		List<List<String>> tmpWordSentenceListInList = new ArrayList<>();
+		for (String tmpSentence : tmpArabicSentences) {
+		  String[] tmpSplit = tmpSentence.split(" ");
+		  tmpWordSentenceListInList.add(Arrays.asList(tmpSplit));
+		}
+		    
+		Word2VecModel tmpModel = trainer().train(tmpWordSentenceListInList);
+		assertNotNull(tmpModel);
+		Searcher tmpSearcher = tmpModel.forSearch();
+		String tmpVocabWord = "الرمادي";
+		assertTrue(tmpSearcher.contains(tmpVocabWord));
+		assertNotNull(tmpSearcher.getMatches(tmpVocabWord, 10));
 	}
 	
 	/** @return {@link Word2VecTrainer} which by default uses all of the supported features */
